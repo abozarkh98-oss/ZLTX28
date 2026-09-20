@@ -4,17 +4,16 @@ from flask import Flask, jsonify, render_template, request, session, redirect, u
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.secret_key = 'zlt-x28-super-secure-production-key-98765'
+app.secret_key = 'zlt-x28-ultimate-secure-production-key-9999'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///modem_shop.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# تنظیم انقضای سشن برای قابلیت Remember Me
 @app.before_request
 def make_session_permanent():
     session.permanent = True
-    app.permanent_session_lifetime = timedelta(days=7) # ماندگاری ۷ روزه در صورت انتخاب
+    app.permanent_session_lifetime = timedelta(days=7)
 
 # --- دیتابیس مدل‌ها ---
 class Package(db.Model):
@@ -31,7 +30,7 @@ class Order(db.Model):
     username = db.Column(db.String(50))
     package_name = db.Column(db.String(100))
     price = db.Column(db.String(50))
-    status = db.Column(db.String(20), default='در انتظار بررسی')
+    status = db.Column(db.String(20), default='در انتظار بررسی') # در انتظار بررسی، تایید شد، رد شد
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class UserData(db.Model):
@@ -39,9 +38,22 @@ class UserData(db.Model):
     username = db.Column(db.String(50), unique=True)
     password = db.Column(db.String(50))
     total_gb = db.Column(db.Float, default=50.0)
-    used_gb = db.Column(db.Float, default=0.0)
-    days_left = db.Column(db.Integer, default=30)
+    used_gb = db.Column(db.Float, default=15.5)
+    days_left = db.Column(db.Integer, default=20)
     signal = db.Column(db.String(50), default='-78 dBm (عالی)')
+
+class ChatMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50))
+    message = db.Column(db.Text)
+    sender = db.Column(db.String(20)) # 'user' یا 'admin'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class BroadcastMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    target_user = db.Column(db.String(50), default='ALL') # 'ALL' برای همگانی یا نام کاربری خاص
+    message = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 with app.app_context():
     db.create_all()
@@ -53,16 +65,11 @@ with app.app_context():
     if not Package.query.first():
         default_packages = [
             ('daily', 'بسته ۱ روزه', '۱ گیگابایت', '۱۵,۰۰۰', 'بسته اقتصادی روزانه مناسب کارهای سبک', 'اقتصادی'),
-            ('daily', 'بسته ۱ روزه', '۲ گیگابایت', '۲۰,۰۰۰', 'سرعت فوق‌العاده مناسب وب‌گردی', 'پرفروش'),
-            ('daily', 'بسته ۱ روزه', '۳ گیگابایت', '۳۰,۰۰۰', 'حجم مطلوب برای استفاده یک روزه', 'استاندارد'),
             ('daily', 'بسته ۱ روزه ویژه', '۵ گیگابایت', '۴۵,۰۰۰', 'همراه با ۱۰٪ تخفیف ویژه مصرف روزانه', 'تخفیف‌دار 10%'),
             ('weekly', 'بسته ۷ روزه استاندارد', '۵ گیگابایت', '۵۰,۰۰۰', 'مقرون‌به‌صرفه برای یک هفته کار', 'اقتصادی'),
             ('weekly', 'بسته ۷ روزه پرطرفدار', '۷ گیگابایت', '۷۰,۰۰۰', 'مناسب برای استریم متوسط', 'پرفروش'),
-            ('weekly', 'بسته ۷ روزه حرفه‌ای', '۹ گیگابایت', '۹۰,۰۰۰', 'حجم مناسب برای بالاترین سرعت', 'پیشنهاد ما'),
             ('monthly', 'بسته ۳۰ روزه استاندارد', '۵ گیگابایت', '۶۵,۰۰۰', 'بسته پایه ماهانه برای اتصال دائمی', 'اقتصادی'),
-            ('monthly', 'بسته ۳۰ روزه متوسط', '۱۰ گیگابایت', '۱۳۰,۰۰۰', 'مناسب برای کاربران کم‌مصرف', 'متوسط'),
             ('monthly', 'بسته ۳۰ روزه سنگین', '۵۰ گیگابایت', '۶۰۰,۰۰۰', 'حجم بالا برای ترافیک کاری', 'پرفروش'),
-            ('monthly', 'بسته شبانه ماهانه VIP', 'نامحدود (۲ تا ۹ صبح)', '۱۲۰,۰۰۰', 'مخصوص دانلودهای ساعات شبانه', 'شبانه VIP'),
         ]
         for p in default_packages:
             db.session.add(Package(category=p[0], name=p[1], data_amount=p[2], price=p[3], desc=p[4], tag=p[5]))
@@ -76,9 +83,9 @@ def index():
         pkgs_dict[p.category].append({
             'id': p.id, 'name': p.name, 'data': p.data_amount, 'price': p.price, 'desc': p.desc, 'tag': p.tag
         })
-    # تعداد کاربران آنلاین تستی (یا شبیه‌سازی‌شده پویا)
-    online_count = 14  
-    return render_template('index.html', packages=pkgs_dict, online_count=online_count)
+    online_count = 19
+    broadcasts = BroadcastMessage.query.order_by(BroadcastMessage.created_at.desc()).limit(5).all()
+    return render_template('index.html', packages=pkgs_dict, online_count=online_count, broadcasts=broadcasts)
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
@@ -86,6 +93,7 @@ def api_login():
     username = data.get('username')
     password = data.get('password')
     
+    # بررسی دقیق وجود کاربر در دیتابیس (جلوگیری از ورود یوزرهای الکی)
     user = UserData.query.filter_by(username=username, password=password).first()
     if user:
         remaining = round(user.total_gb - user.used_gb, 2)
@@ -100,19 +108,46 @@ def api_login():
             'days': user.days_left,
             'signal': user.signal
         })
-    return jsonify({'success': False, 'message': 'نام کاربری یا رمز عبور اشتباه است.'})
+    return jsonify({
+        'success': False, 
+        'message': '❌ یوزرنیم یا پسورد اشتباه یا وجود ندارد! لطفا از ادمین درخواست اکانت کنید.'
+    })
 
 @app.route('/api/order', methods=['POST'])
 def submit_order():
     data = request.json
     username = data.get('username')
-    if not username:
-        return jsonify({'success': False, 'message': '❌ ابتدا باید وارد حساب کاربری خود شوید!'})
+    password = data.get('password')
+    
+    # اعتبارسنجی سخت‌گیرانه موقع ثبت سفارش
+    user = UserData.query.filter_by(username=username, password=password).first()
+    if not user:
+        return jsonify({
+            'success': False, 
+            'message': '❌ یوزرنیم یا پسورد اشتباه یا وجود ندارد! لطفا از ادمین درخواست اکانت کنید.'
+        })
     
     new_order = Order(username=username, package_name=data.get('packageName'), price=data.get('price'))
     db.session.add(new_order)
     db.session.commit()
-    return jsonify({'success': True, 'message': 'سفارش شما با موفقیت ثبت شد و به ادمین ارسال گردید.'})
+    return jsonify({'success': True, 'message': 'سفارش شما با موفقیت ثبت شد و در انتظار تایید ادمین است. ✅'})
+
+@app.route('/api/chat', methods=['POST'])
+def handle_chat():
+    data = request.json
+    username = data.get('username')
+    message = data.get('message')
+    if username and message:
+        chat = ChatMessage(username=username, message=message, sender='user')
+        db.session.add(chat)
+        db.session.commit()
+        return jsonify({'success': True})
+    return jsonify({'success': False})
+
+@app.route('/api/get_chats/<username>')
+def get_chats(username):
+    chats = ChatMessage.query.filter_by(username=username).order_by(ChatMessage.created_at.asc()).all()
+    return jsonify([{'sender': c.sender, 'message': c.message, 'time': c.created_at.strftime('%H:%M')} for c in chats])
 
 # --- پنل ادمین ---
 @app.route('/admin', methods=['GET', 'POST'])
@@ -127,28 +162,36 @@ def admin_panel():
         orders = Order.query.order_by(Order.created_at.desc()).all()
         packages = Package.query.all()
         users = UserData.query.all()
-        online_count = 14
-        return render_template('admin_dashboard.html', orders=orders, packages=packages, users=users, online_count=online_count)
+        chats = ChatMessage.query.order_by(ChatMessage.created_at.desc()).all()
+        online_count = 19
+        return render_template('admin_dashboard.html', orders=orders, packages=packages, users=users, chats=chats, online_count=online_count)
     
     return render_template('admin_login.html')
 
-@app.route('/admin/update_price/<int:pkg_id>', methods=['POST'])
-def update_price(pkg_id):
+@app.route('/admin/order_action/<int:order_id>/<action>')
+def order_action(order_id, action):
     if not session.get('is_admin'): return redirect(url_for('admin_panel'))
-    pkg = Package.query.get_or_404(pkg_id)
-    pkg.price = request.form.get('price')
-    pkg.tag = request.form.get('tag')
+    order = Order.query.get_or_404(order_id)
+    if action == 'accept':
+        order.status = 'تایید شد ✅'
+        # افزایش حجم کاربر به صورت خودکار پس از تایید
+        user = UserData.query.filter_by(username=order.username).first()
+        if user:
+            user.total_gb += 10.0 # فرض افزودن ۱۰ گیگ به عنوان هدیه بسته
+    else:
+        order.status = 'رد شد ❌'
     db.session.commit()
     return redirect(url_for('admin_panel'))
 
-@app.route('/admin/update_user/<int:user_id>', methods=['POST'])
-def update_user(user_id):
+@app.route('/admin/broadcast', methods=['POST'])
+def send_broadcast():
     if not session.get('is_admin'): return redirect(url_for('admin_panel'))
-    user = UserData.query.get_or_404(user_id)
-    user.total_gb = float(request.form.get('total_gb', user.total_gb))
-    user.used_gb = float(request.form.get('used_gb', user.used_gb))
-    user.days_left = int(request.form.get('days_left', user.days_left))
-    db.session.commit()
+    target = request.form.get('target_user', 'ALL')
+    msg = request.form.get('message')
+    if msg:
+        b = BroadcastMessage(target_user=target, message=msg)
+        db.session.add(b)
+        db.session.commit()
     return redirect(url_for('admin_panel'))
 
 @app.route('/admin/add_user', methods=['POST'])
