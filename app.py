@@ -1,14 +1,20 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from flask import Flask, jsonify, render_template, request, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.secret_key = 'zlt-x28-super-secret-key-change-it'
+app.secret_key = 'zlt-x28-super-secure-production-key-98765'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///modem_shop.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# تنظیم انقضای سشن برای قابلیت Remember Me
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(days=7) # ماندگاری ۷ روزه در صورت انتخاب
 
 # --- دیتابیس مدل‌ها ---
 class Package(db.Model):
@@ -70,7 +76,9 @@ def index():
         pkgs_dict[p.category].append({
             'id': p.id, 'name': p.name, 'data': p.data_amount, 'price': p.price, 'desc': p.desc, 'tag': p.tag
         })
-    return render_template('index.html', packages=pkgs_dict)
+    # تعداد کاربران آنلاین تستی (یا شبیه‌سازی‌شده پویا)
+    online_count = 14  
+    return render_template('index.html', packages=pkgs_dict, online_count=online_count)
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
@@ -97,7 +105,11 @@ def api_login():
 @app.route('/api/order', methods=['POST'])
 def submit_order():
     data = request.json
-    new_order = Order(username=data.get('username'), package_name=data.get('packageName'), price=data.get('price'))
+    username = data.get('username')
+    if not username:
+        return jsonify({'success': False, 'message': '❌ ابتدا باید وارد حساب کاربری خود شوید!'})
+    
+    new_order = Order(username=username, package_name=data.get('packageName'), price=data.get('price'))
     db.session.add(new_order)
     db.session.commit()
     return jsonify({'success': True, 'message': 'سفارش شما با موفقیت ثبت شد و به ادمین ارسال گردید.'})
@@ -115,7 +127,8 @@ def admin_panel():
         orders = Order.query.order_by(Order.created_at.desc()).all()
         packages = Package.query.all()
         users = UserData.query.all()
-        return render_template('admin_dashboard.html', orders=orders, packages=packages, users=users)
+        online_count = 14
+        return render_template('admin_dashboard.html', orders=orders, packages=packages, users=users, online_count=online_count)
     
     return render_template('admin_login.html')
 
