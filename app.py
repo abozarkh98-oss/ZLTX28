@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 from flask import Flask, jsonify, render_template, request, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
@@ -105,7 +106,6 @@ def submit_order():
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_panel():
     if request.method == 'POST':
-        # بررسی نام کاربری و رمز عبور جدید ادمین
         if request.form.get('username') == 'admin' and request.form.get('password') == 'Khani_1396':
             session['is_admin'] = True
         else:
@@ -158,4 +158,5 @@ def admin_logout():
     return redirect(url_for('admin_panel'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
