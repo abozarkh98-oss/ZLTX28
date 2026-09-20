@@ -5,16 +5,27 @@
     <title>ورود به پنل مدیریت - ZLT X28</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Vazirmatn', sans-serif; background-color: #0b0f19; color: #f3f4f6; }</style>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.5s ease-out forwards; }
+    </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-2xl">
+    
+    <!-- Toast Notification (مخفی به صورت پیش‌فرض) -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-emerald-500 text-slate-950 px-6 py-3 rounded-2xl font-bold shadow-2xl flex items-center gap-3 transform translate-y-24 opacity-0 transition-all duration-500 z-50">
+        <span class="text-xl">🎉</span>
+        <span>با موفقیت وارد شدید! خوش آمدید ادمین عزیز.</span>
+    </div>
+
+    <div class="max-w-md w-full bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-2xl animate-fade">
         <div class="text-center mb-8">
             <div class="inline-block bg-sky-500/10 text-sky-400 p-3 rounded-2xl mb-4 border border-sky-500/20 text-2xl">
                 🔐
             </div>
             <h1 class="text-xl font-bold text-white">ورود به پنل مدیریت</h1>
-            <p class="text-xs text-slate-400 mt-1">اطلاعات ورود ادمین را وارد کنید</p>
+            <p class="text-xs text-slate-400 mt-1">اطلاعات امنیتی مودم ZLT X28</p>
         </div>
 
         {% if error %}
@@ -23,7 +34,7 @@
         </div>
         {% endif %}
 
-        <form action="/admin" method="POST" class="space-y-4">
+        <form id="loginForm" action="/admin" method="POST" class="space-y-4">
             <div>
                 <label class="block text-xs text-slate-400 mb-1.5">نام کاربری ادمین</label>
                 <input type="text" name="username" required value="admin" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:border-sky-500 focus:outline-none transition">
@@ -38,8 +49,16 @@
                     </button>
                 </div>
             </div>
+
+            <!-- قابلیت Remember Me -->
+            <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="rememberMe" class="rounded bg-slate-950 border-slate-800 text-sky-500 focus:ring-0">
+                    <span>مرا به خاطر بسپار (Remember Me)</span>
+                </label>
+            </div>
             
-            <button type="submit" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-sky-500/20 mt-2">
+            <button type="submit" onclick="handleLoginSuccess(event)" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-sky-500/20 mt-2">
                 ورود به مدیریت
             </button>
         </form>
@@ -52,10 +71,38 @@
     <script>
         function togglePassword() {
             const passInput = document.getElementById('admin-password');
-            if (passInput.type === 'password') {
-                passInput.type = 'text';
-            } else {
-                passInput.type = 'password';
+            passInput.type = passInput.type === 'password' ? 'text' : 'password';
+        }
+
+        // بارگذاری اطلاعات ذخیره شده Remember Me در صورت وجود
+        window.onload = function() {
+            const savedUser = localStorage.getItem('zlt_admin_user');
+            if(savedUser) {
+                document.querySelector('input[name="username"]').value = savedUser;
+                document.getElementById('rememberMe').checked = true;
+            }
+        }
+
+        function handleLoginSuccess(event) {
+            const usernameInput = document.querySelector('input[name="username"]').value;
+            const passInput = document.querySelector('input[name="password"]').value;
+            const rememberEl = document.getElementById('rememberMe').checked;
+
+            if(usernameInput === 'admin' && passInput === 'Khani_1396') {
+                if(rememberEl) {
+                    localStorage.setItem('zlt_admin_user', usernameInput);
+                } else {
+                    localStorage.removeItem('zlt_admin_user');
+                }
+                
+                // نمایش توست ۳ ثانیه‌ای موفقیت
+                event.preventDefault();
+                const toast = document.getElementById('toast');
+                toast.classList.remove('translate-y-24', 'opacity-0');
+                
+                setTimeout(() => {
+                    document.getElementById('loginForm').submit();
+                }, 1500); // ارسال فرم بعد از نمایش انیمیشن موفقیت
             }
         }
     </script>
