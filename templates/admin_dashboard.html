@@ -2,127 +2,150 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>پنل مدیریت و سفارشات - ZLT X28</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل مدیریت مودم ZLT X28</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Vazirmatn', sans-serif; background-color: #0b0f19; color: #f3f4f6; }</style>
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+        .smooth-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
 </head>
-<body class="min-h-screen p-4 sm:p-6">
-    <div class="max-w-6xl mx-auto">
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-8 bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
-            <div>
-                <h1 class="text-xl font-bold text-white">پنل مدیریت بسته‌های اینترنت ZLT X28</h1>
-                <p class="text-xs text-slate-400 mt-1">مدیریت قیمت‌ها، آفرها، حجم کاربران و سفارش‌های ثبت‌شده</p>
+<body class="min-h-screen pb-12">
+
+    <!-- هدر پنل مدیریت -->
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-sky-500/10 text-sky-400 p-2.5 rounded-xl border border-sky-500/20 text-lg">🛡️</div>
+                <div>
+                    <h1 class="font-bold text-white text-sm md:text-base">پنل مدیریت پیشرفته ZLT X28</h1>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-xs text-slate-400">کاربران آنلاین در سامانه: <strong class="text-emerald-400">{{ online_count }}</strong> نفر</span>
+                    </div>
+                </div>
             </div>
-            <a href="/admin/logout" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-4 py-2 rounded-xl text-xs font-medium transition">خروج از مدیریت</a>
+            <div class="flex items-center gap-3">
+                <a href="/" target="_blank" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold smooth-transition">مشاهده سایت 🌐</a>
+                <a href="/admin/logout" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-4 py-2 rounded-xl text-xs font-bold smooth-transition">خروج از مدیریت</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- محتوای داشبورد -->
+    <main class="max-w-7xl mx-auto px-4 mt-8 space-y-8 animate-fade">
+        
+        <!-- آمار کلی سیستم -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                <span class="text-xs text-slate-400">کل سفارش‌های ثبت‌شده</span>
+                <p class="text-xl font-bold text-white mt-1">{{ orders | length }} سفارش</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                <span class="text-xs text-slate-400">تعداد کل بسته‌های فعال</span>
+                <p class="text-xl font-bold text-emerald-400 mt-1">{{ packages | length }} بسته</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                <span class="text-xs text-slate-400">تعداد کل کاربران ثبت‌نامی</span>
+                <p class="text-xl font-bold text-sky-400 mt-1">{{ users | length }} کاربر</p>
+            </div>
         </div>
 
-        <!-- Orders Section -->
-        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 mb-8 shadow-xl">
-            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span>🛒</span> سفارش‌های جدید مشتریان
-            </h2>
+        <!-- بخش ۱: سفارش‌های مشتریان -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-sm font-bold text-white mb-4 flex items-center gap-2">📦 آخرین سفارش‌های خرید بسته</h2>
             <div class="overflow-x-auto">
-                <table class="w-full text-right text-sm">
+                <table class="w-full text-right text-xs">
                     <thead>
-                        <tr class="border-b border-slate-800 text-slate-400 text-xs">
-                            <th class="pb-3 px-2">نام کاربر / مودم</th>
-                            <th class="pb-3 px-2">بسته درخواستی</th>
-                            <th class="pb-3 px-2">مبلغ</th>
-                            <th class="pb-3 px-2">وضعیت</th>
-                            <th class="pb-3 px-2">زمان ثبت</th>
+                        <tr class="border-b border-slate-800 text-slate-400">
+                            <th class="pb-3 px-4">شناسه</th>
+                            <th class="pb-3 px-4">نام کاربری</th>
+                            <th class="pb-3 px-4">نام بسته</th>
+                            <th class="pb-3 px-4">مبلغ (تومان)</th>
+                            <th class="pb-3 px-4">وضعیت</th>
+                            <th class="pb-3 px-4">تاریخ ثبت</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800/60">
                         {% for order in orders %}
-                        <tr class="text-xs">
-                            <td class="py-3 px-2 font-bold text-white">{{ order.username }}</td>
-                            <td class="py-3 px-2 text-sky-400">{{ order.package_name }}</td>
-                            <td class="py-3 px-2 text-emerald-400 font-bold">{{ order.price }}</td>
-                            <td class="py-3 px-2"><span class="bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-md border border-amber-500/20">{{ order.status }}</span></td>
-                            <td class="py-3 px-2 text-slate-500">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <tr class="hover:bg-slate-950/40 smooth-transition">
+                            <td class="py-3 px-4 text-slate-400">#{{ order.id }}</td>
+                            <td class="py-3 px-4 font-bold text-sky-400">{{ order.username }}</td>
+                            <td class="py-3 px-4 text-white">{{ order.package_name }}</td>
+                            <td class="py-3 px-4 text-emerald-400 font-bold">{{ order.price }}</td>
+                            <td class="py-3 px-4"><span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-lg text-[10px]">{{ order.status }}</span></td>
+                            <td class="py-3 px-4 text-slate-500">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="5" class="py-6 text-center text-slate-500">سفارشی ثبت نشده است.</td></tr>
+                        <tr>
+                            <td colspan="6" class="text-center py-6 text-slate-500">هنوز سفارشی ثبت نشده است.</td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Users Management Section -->
-        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 mb-8 shadow-xl">
-            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span>👥</span> مدیریت کاربران و حجم مصرفی لحظه‌ای
-            </h2>
-            
-            <!-- Add User Form -->
-            <form action="/admin/add_user" method="POST" class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 flex flex-wrap gap-3 items-end">
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">نام کاربری مشتری</label>
-                    <input type="text" name="username" required class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none" placeholder="مثال: client_02">
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">رمز عبور</label>
-                    <input type="text" name="password" required class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none" placeholder="رمز عبور">
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">حجم اولیه (گیگابایت)</label>
-                    <input type="number" step="0.1" name="total_gb" value="50" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white w-28 focus:border-sky-500 focus:outline-none">
-                </div>
-                <button type="submit" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs transition">افزودن کاربر جدید</button>
-            </form>
-
-            <!-- Users List -->
-            <div class="space-y-3">
-                {% for u in users %}
-                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-4">
-                    <div>
-                        <span class="font-bold text-white text-sm">👤 {{ u.username }}</span>
-                        <span class="text-xs text-slate-500 block mt-0.5">رمز ورود: <span class="text-slate-300 font-mono">{{ u.password }}</span></span>
-                    </div>
-                    <form action="/admin/update_user/{{ u.id }}" method="POST" class="flex items-center gap-2 flex-wrap">
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">کل حجم (گ)</span>
-                            <input type="number" step="0.1" name="total_gb" value="{{ u.total_gb }}" class="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white w-20 text-center">
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">مصرف شده (گ)</span>
-                            <input type="number" step="0.1" name="used_gb" value="{{ u.used_gb }}" class="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white w-20 text-center">
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-slate-400 block">روز اعتبار</span>
-                            <input type="number" name="days_left" value="{{ u.days_left }}" class="bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white w-20 text-center">
-                        </div>
-                        <button type="submit" class="bg-sky-500 hover:bg-sky-400 text-white px-3 py-2 rounded-lg text-xs font-medium self-end transition">ذخیره حجم</button>
-                    </form>
-                </div>
-                {% endfor %}
+        <!-- بخش ۲: مدیریت کاربران و حجم‌ها -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-sm font-bold text-white mb-4 flex items-center gap-2">👥 مدیریت کاربران و حجم مصرفی مودم</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400">
+                            <th class="pb-3 px-4">نام کاربری</th>
+                            <th class="pb-3 px-4">کل حجم (گیگ)</th>
+                            <th class="pb-3 px-4">حجم مصرفی (گیگ)</th>
+                            <th class="pb-3 px-4">روزهای باقیمانده</th>
+                            <th class="pb-3 px-4">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        {% for user in users %}
+                        <tr>
+                            <form action="/admin/update_user/{{ user.id }}" method="POST">
+                                <td class="py-3 px-4 font-bold text-white">{{ user.username }}</td>
+                                <td class="py-3 px-4"><input type="number" step="0.1" name="total_gb" value="{{ user.total_gb }}" class="w-24 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white"></td>
+                                <td class="py-3 px-4"><input type="number" step="0.1" name="used_gb" value="{{ user.used_gb }}" class="w-24 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white"></td>
+                                <td class="py-3 px-4"><input type="number" name="days_left" value="{{ user.days_left }}" class="w-20 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white"></td>
+                                <td class="py-3 px-4"><button type="submit" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3 py-1.5 rounded-lg font-bold transition">بروزرسانی</button></td>
+                            </form>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- Packages Pricing & Offers Section -->
-        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
-            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <span>⚙️</span> ویرایش قیمت‌ها و آفر بسته‌ها
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- بخش ۳: مدیریت و تغییر قیمت بسته‌ها -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-sm font-bold text-white mb-4 flex items-center gap-2">⚙️ تنظیم قیمت و برچسب بسته‌ها</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {% for pkg in packages %}
-                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
-                    <div>
-                        <span class="text-[10px] text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20 uppercase">{{ pkg.category }}</span>
-                        <h3 class="font-bold text-white text-sm mt-2">{{ pkg.name }} <span class="text-emerald-400">({{ pkg.data_amount }})</span></h3>
+                <div class="bg-slate-950 border border-slate-800/80 p-4 rounded-xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-white text-xs">{{ pkg.name }}</span>
+                        <span class="text-[10px] text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">{{ pkg.data_amount }}</span>
                     </div>
-                    <form action="/admin/update_price/{{ pkg.id }}" method="POST" class="mt-4 flex gap-2">
-                        <input type="text" name="price" value="{{ pkg.price }}" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white w-1/2 focus:border-sky-500 focus:outline-none" placeholder="قیمت جدید">
-                        <input type="text" name="tag" value="{{ pkg.tag }}" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white w-1/3 focus:border-sky-500 focus:outline-none" placeholder="تگ / آفر">
-                        <button type="submit" class="bg-sky-500 hover:bg-sky-400 text-white px-4 py-2 rounded-lg text-xs font-medium transition">بروزرسانی</button>
+                    <form action="/admin/update_price/{{ pkg.id }}" method="POST" class="space-y-2">
+                        <div>
+                            <label class="text-[10px] text-slate-400">قیمت (تومان):</label>
+                            <input type="text" name="price" value="{{ pkg.price }}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400">برچسب (تگ):</label>
+                            <input type="text" name="tag" value="{{ pkg.tag }}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white">
+                        </div>
+                        <button type="submit" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 py-1.5 rounded-lg text-xs font-bold transition">ذخیره تغییرات</button>
                     </form>
                 </div>
                 {% endfor %}
             </div>
         </div>
-    </div>
+
+    </main>
 </body>
 </html>
